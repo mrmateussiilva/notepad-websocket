@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Notepad</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.js"></script>
+  <style>
+    body {
+      margin: 0;
+      font-family: sans-serif;
+      background: #f4f4f4;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 20px;
+    }
+
+    .container {
+      width: 100%;
+      max-width: 800px;
+    }
+
+    textarea {
+      width: 100%;
+      height: 300px;
+      padding: 10px;
+      font-size: 16px;
+      resize: vertical;
+    }
+
+    .toolbar {
+      margin: 10px 0;
+      display: flex;
+      gap: 10px;
+    }
+
+    button {
+      padding: 8px 12px;
+      border: 1px solid #ccc;
+      background: white;
+      cursor: pointer;
+    }
+
+    .status {
+      font-size: 0.9rem;
+      color: #555;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="status" id="status">Conectando...</div>
+    <div class="toolbar">
+      <button id="clearBtn">Limpar</button>
+      <button id="saveBtn">Salvar</button>
+      <button id="copyBtn">Copiar</button>
+    </div>
+    <textarea id="notepad" placeholder="Digite aqui..."></textarea>
+  </div>
+
+  <script>
+    const socket = io();
+    const textarea = document.getElementById('notepad');
+    const clearBtn = document.getElementById('clearBtn');
+    const saveBtn = document.getElementById('saveBtn');
+    const copyBtn = document.getElementById('copyBtn');
+    const status = document.getElementById('status');
+
+    socket.on('connect', () => {
+      status.textContent = 'Conectado';
+    });
+
+    socket.on('disconnect', () => {
+      status.textContent = 'Desconectado';
+    });
+
+    socket.on('update_text', (data) => {
+      if (textarea.value !== data) {
+        textarea.value = data;
+      }
+    });
+
+    textarea.addEventListener('input', () => {
+      socket.emit('text_update', textarea.value);
+    });
+
+    clearBtn.addEventListener('click', () => {
+      textarea.value = '';
+      socket.emit('text_update', '');
+    });
+
+    saveBtn.addEventListener('click', () => {
+      const blob = new Blob([textarea.value], {type: 'text/plain'});
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'notepad.txt';
+      a.click();
+    });
+
+    copyBtn.addEventListener('click', () => {
+      textarea.select();
+      document.execCommand('copy');
+    });
+  </script>
+</body>
+</html>
